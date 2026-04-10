@@ -1,0 +1,14 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    // Excludes test files from the published dist output.
+    // Tests import devDependencies (jest, etc.) that are not present
+    // in consumer node_modules, which would cause tsc to error on publish.
+    "sourceMap": false
+  },
+  "exclude": [
+    "**/*.test.ts",
+    "**/*.spec.ts",
+    "**/__tests__/**"
+  ]
+}

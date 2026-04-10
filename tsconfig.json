@@ -1,0 +1,30 @@
+{
+  "compilerOptions": {
+    // Target ES2022 for async/await, Promise.allSettled, WeakRef etc.
+    // without requiring any additional polyfills.
+    "target": "ES2022",
+
+    // No "DOM" — this is a server SDK. fetch is provided by @types/node ≥18.
+    // Adding DOM would contaminate the type environment with browser globals
+    // (window, document) which must never be referenced here.
+    "lib": ["ES2022"],
+
+    "module":           "NodeNext",
+    "moduleResolution": "NodeNext",
+
+    // Strict type-checking — enforces correct null handling and prevents
+    // accidental any leakage across the zero-dependency surface.
+    "strict":          true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+
+    // Source maps and declarations for the dist output.
+    "declaration":    true,
+    "declarationMap": true,
+    "sourceMap":      true,
+
+    "outDir":  "./dist",
+    "rootDir": "./src"
+  },
+  "include": ["src"]
+}
