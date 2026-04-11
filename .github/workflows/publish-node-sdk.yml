@@ -1,0 +1,89 @@
+name: Publish to npm
+
+# Triggers on any tag of the form v1.0.0, v1.2.3-beta.1, etc.
+# This is the only trigger — no branch pushes, no PRs, no schedules.
+on:
+  push:
+    tags:
+      - "v*"
+
+# Minimal permissions following least-privilege principle:
+#   contents: read  — checkout only; no write access to the repository.
+#   id-token: write — required by npm to mint an OIDC token for provenance
+#                     attestation. Without this, --provenance fails.
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    name: Build, test, and publish
+    runs-on: ubuntu-latest
+
+    steps:
+      # ── 1. Source ────────────────────────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ── 2. Toolchain ─────────────────────────────────────────────────────────
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          # Configures .npmrc with //registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}
+          # so that `npm publish` picks up the secret automatically.
+          registry-url: "https://registry.npmjs.org"
+          # Cache the npm dependency cache keyed on package-lock.json.
+          # npm ci still validates integrity; this only skips the network fetch
+          # for packages already in the runner cache.
+          cache: "npm"
+
+      # ── 3. Verify tag matches package.json version ───────────────────────────
+      # Prevents a published artefact whose npm version (from package.json)
+      # disagrees with the Git tag that triggered the release. Catches the
+      # common mistake of forgetting to bump package.json before tagging.
+      - name: Verify tag matches package.json version
+        run: |
+          PKG_VERSION="v$(node -p "require('./package.json').version")"
+          GIT_TAG="${{ github.ref_name }}"
+          if [ "$PKG_VERSION" != "$GIT_TAG" ]; then
+            echo "ERROR: package.json version ($PKG_VERSION) does not match Git tag ($GIT_TAG)."
+            echo "Bump the version in package.json before tagging a release."
+            exit 1
+          fi
+          echo "Version check passed: $GIT_TAG"
+
+      # ── 4. Dependencies ──────────────────────────────────────────────────────
+      # npm ci is used instead of npm install to enforce exact lockfile
+      # reproducibility and fail loudly on any lockfile mismatch.
+      - name: Install dependencies
+        run: npm ci
+
+      # ── 5. Build ─────────────────────────────────────────────────────────────
+      # Compiles src/ → dist/ (CJS + ESM + type declarations).
+      # The prepublishOnly script in package.json also runs build, but we run
+      # it explicitly here so a build failure surfaces as a named step rather
+      # than appearing inside the publish step.
+      - name: Build
+        run: npm run build
+
+      # ── 6. Test ──────────────────────────────────────────────────────────────
+      # Gate on tests before any artefact leaves the runner.
+      # The test suite is a placeholder today (see package.json: "test" script).
+      # Replace with a real test runner (Jest, Vitest, Node test runner) when
+      # the test sprint is complete.
+      - name: Test
+        run: npm test
+
+      # ── 7. Publish ───────────────────────────────────────────────────────────
+      # --provenance  links the published tarball to this specific Actions run
+      #               via a Sigstore attestation. Consumers can verify the
+      #               package was built from this exact commit and workflow.
+      #               Requires id-token: write (see permissions block above)
+      #               and npm ≥ 9.5.0 (Node 20 ships with npm ≥ 10).
+      # --access public  required for scoped packages on the npm free tier;
+      #               harmless for unscoped packages like this one.
+      - name: Publish to npm
+        run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
