@@ -59,8 +59,7 @@ Do not relax strict mode or add `@ts-ignore` suppressions. If a type error seems
 - **`language` is hard-coded to `"typescript"`.** This is intentional per the gateway's Kafka routing, but it means plain JavaScript consumers are misclassified. There is no plan to fix this without a gateway protocol change.
 - **`installHook()` delivery on process crash is best-effort.** Node.js terminates after synchronous `uncaughtException` listeners return. The `void dispatch()` Promise begins executing but may not complete before exit. This is a known, accepted trade-off.
 - **`configure()` can be called more than once silently.** The second call replaces the active config. There is no guard or warning. This can surprise callers in hot-reload environments.
-- **IPv6 is not scrubbed.** Only IPv4 dotted-quad addresses match `RE_IP`. Noted in `scrubber.ts`.
-- **Credit card detection has no Luhn validation.** The pattern matches digit groups that look like card numbers. False positives are possible but accepted to avoid false negatives.
+- **Credit card detection has no Luhn validation.** Luhn validation was added to the Python SDK and Java starter in Sprint 26; the Node SDK still accepts any digit group matching the card pattern. False positives are possible but accepted to avoid false negatives. This is the remaining gap across the three SDKs.
 - **`githubRepo` is not validated locally.** The gateway enforces an allowlist and returns 4xx for unregistered repos. A configure-time validation warning would improve the developer experience.
 
 ## CI / Publishing

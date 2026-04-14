@@ -132,12 +132,15 @@ Before any data leaves the process, `errorMessage` and `stackTrace` are scrubbed
 | Email addresses | `user@example.com` | `[EMAIL]` |
 | Credit card numbers | `4111 1111 1111 1111` | `[CREDIT_CARD]` |
 | IPv4 addresses | `192.168.1.1` | `[IP_ADDRESS]` |
-| IPv6 addresses | `2001:db8::1`, `::1` | `[IP_ADDRESS]` |
 | Bearer tokens | `Bearer eyJhbGc...` | `Bearer [REDACTED_TOKEN]` |
 | Vendor API keys | `sk-abc123`, `ghp_xyz` | `sk-[REDACTED_TOKEN]` |
 | Key=value secrets | `password=hunter2` | `password=[REDACTED_SECRET]` |
 
 Structural fields (`exceptionType`, `endpoint`, `githubRepo`, `timestamp`) are never scrubbed — they cannot contain free-text PII by design.
+
+**Known limitations of the scrubber:**
+- IPv6 addresses are not detected (future work).
+- Credit card detection uses a digit-group pattern without Luhn validation — false positives are possible for numeric strings that resemble card numbers.
 
 ---
 
@@ -210,3 +213,4 @@ Releases are published automatically by GitHub Actions when a `v*` tag is pushed
 - **`installHook()` delivery is not guaranteed** on process crash. The fire-and-forget Promise starts executing, but a very short-lived process may exit before the HTTP request completes.
 - **`configure()` is silently replaceable.** Calling it a second time replaces the active config with no warning. In an application that initialises multiple times (e.g. hot reload in development), this can produce unexpected behaviour.
 - **`githubRepo` must be on the gateway allowlist.** The gateway will reject payloads for unregistered repositories with a 4xx response; there is no local validation at `configure()` time.
+- **IPv6 addresses are not scrubbed.** Only dotted-quad IPv4 addresses are detected.

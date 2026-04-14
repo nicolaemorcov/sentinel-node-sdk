@@ -22,9 +22,19 @@ const RE_EMAIL = /[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/g;
 // false positives in a stack trace context are rare.
 const RE_CREDIT_CARD = /\b(?:\d{4}[\s\-]?){3}\d{1,4}\b/g;
 
-// ── Category 3: IPv4 addresses ────────────────────────────────────────────────
-// Matches dotted-quad notation. Does not match IPv6 (separate future ticket).
+// ── Category 3a: IPv4 addresses ───────────────────────────────────────────────
+// Matches dotted-quad notation.
 const RE_IP = /\b(?:\d{1,3}\.){3}\d{1,3}\b/g;
+
+// ── Category 3b: IPv6 addresses ───────────────────────────────────────────────
+// Covers full and compressed notation (e.g. 2001:db8::1) and bare loopback (::1).
+// First alternative: one leading hex group followed by 2–7 colon-prefixed groups
+// (each 0–4 hex digits), allowing "::" zero-compression without false-matching
+// short sequences like "80:443" (only one additional colon group).
+// Second alternative: bare loopback "::1".
+// Lookbehind/lookahead on [.\w] prevent false matches inside version strings.
+// Requires Node.js 9.11.2+ (V8 lookbehind support); SDK already requires Node 18.3+.
+const RE_IPV6 = /(?<![.\w])(?:[0-9a-fA-F]{1,4}(?::[0-9a-fA-F]{0,4}){2,7}|::1)(?![.\w])/gi;
 
 // ── Category 4: Bearer tokens and well-known API key prefixes ────────────────
 // Two sub-patterns handled in sequence:
@@ -58,8 +68,11 @@ export function scrub(input: string): string {
     // 2. Credit card numbers
     .replace(RE_CREDIT_CARD, "[CREDIT_CARD]")
 
-    // 3. IPv4 addresses
+    // 3a. IPv4 addresses
     .replace(RE_IP, "[IP_ADDRESS]")
+
+    // 3b. IPv6 addresses (full, compressed, and loopback)
+    .replace(RE_IPV6, "[IP_ADDRESS]")
 
     // 4a. Bearer tokens — preserves "Bearer " prefix
     .replace(RE_BEARER, "Bearer [REDACTED_TOKEN]")
