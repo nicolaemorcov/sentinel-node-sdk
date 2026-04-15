@@ -18,9 +18,28 @@ const RE_EMAIL = /[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/g;
 
 // ── Category 2: Credit card numbers ──────────────────────────────────────────
 // Matches 4 groups of 4 digits (13–19 total) with optional space or dash
-// separators. Luhn validity is not enforced — false negatives are acceptable;
-// false positives in a stack trace context are rare.
+// separators. Candidates are validated with a Luhn checksum before redaction
+// to eliminate false positives on order IDs, timestamps, and other long numeric
+// strings. This matches the behaviour of the Python SDK and Java starter.
 const RE_CREDIT_CARD = /\b(?:\d{4}[\s\-]?){3}\d{1,4}\b/g;
+
+/**
+ * Returns true if the digit sequence in `value` passes the Luhn checksum.
+ * Non-digit characters (spaces, dashes) are stripped before validation.
+ */
+function luhnValid(value: string): boolean {
+  const digits = value.replace(/\D/g, "").split("").map(Number);
+  let sum = 0;
+  for (let i = 0; i < digits.length; i++) {
+    let d = digits[digits.length - 1 - i]!;
+    if (i % 2 === 1) {
+      d *= 2;
+      if (d > 9) d -= 9;
+    }
+    sum += d;
+  }
+  return digits.length >= 13 && sum % 10 === 0;
+}
 
 // ── Category 3a: IPv4 addresses ───────────────────────────────────────────────
 // Matches dotted-quad notation.
@@ -65,8 +84,8 @@ export function scrub(input: string): string {
     // 1. Emails — must run before the generic secret pattern to avoid partial matches
     .replace(RE_EMAIL, "[EMAIL]")
 
-    // 2. Credit card numbers
-    .replace(RE_CREDIT_CARD, "[CREDIT_CARD]")
+    // 2. Credit card numbers — Luhn-validated to eliminate false positives
+    .replace(RE_CREDIT_CARD, (match) => luhnValid(match) ? "[CREDIT_CARD]" : match)
 
     // 3a. IPv4 addresses
     .replace(RE_IP, "[IP_ADDRESS]")
