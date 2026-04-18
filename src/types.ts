@@ -59,4 +59,12 @@ export interface SentinelConfig {
    * Useful in test environments and CI. Default: true
    */
   enabled:          boolean;
+  /**
+   * Optional callback invoked after the gateway accepts an exception (HTTP 2xx).
+   * Receives the exception_id returned by the gateway — use it to correlate
+   * Sentinel records with your own observability or to store the ID for
+   * Portal-mediated fix approval workflows.
+   * Called asynchronously; errors thrown inside are caught and logged.
+   */
+  onAccepted?:      (exceptionId: string) => void;
 }

@@ -28,10 +28,10 @@ function sleep(ms: number): Promise<void> {
  *     not transient and must not be retried.
  *   - Each retry is preceded by a full-jitter exponential backoff delay.
  */
-export async function dispatch(payload: ExceptionRequest): Promise<void> {
+export async function dispatch(payload: ExceptionRequest): Promise<string | null> {
   const config = getConfig();
 
-  if (!config.enabled) return;
+  if (!config.enabled) return null;
 
   // Runtime guard for Node 18.0–18.2 where fetch requires --experimental-fetch.
   if (typeof fetch === "undefined") {
@@ -40,7 +40,7 @@ export async function dispatch(payload: ExceptionRequest): Promise<void> {
         "Node.js 18.3+ is required, or run Node 18.0–18.2 with the " +
         "--experimental-fetch flag. Exception not delivered."
     );
-    return;
+    return null;
   }
 
   const url = `${config.gatewayUrl}/api/v1/exceptions`;
@@ -65,8 +65,17 @@ export async function dispatch(payload: ExceptionRequest): Promise<void> {
       clearTimeout(timeoutId);
 
       if (response.ok) {
-        // 2xx — delivered successfully.
-        return;
+        try {
+          const data = await response.json() as Record<string, unknown>;
+          const id = data["exception_id"];
+          const exceptionId = typeof id === "string" ? id : null;
+          if (exceptionId && config.onAccepted) {
+            try { config.onAccepted(exceptionId); } catch { /* never propagate */ }
+          }
+          return exceptionId;
+        } catch {
+          return null;
+        }
       }
 
       if (response.status >= 400 && response.status < 500) {
@@ -75,7 +84,7 @@ export async function dispatch(payload: ExceptionRequest): Promise<void> {
           `[Sentinel] Gateway rejected payload (HTTP ${response.status}). ` +
             "Check your apiKey, githubRepo, and account quota. No retry will be attempted."
         );
-        return;
+        return null;
       }
 
       // 5xx — retryable server error.
@@ -106,4 +115,5 @@ export async function dispatch(payload: ExceptionRequest): Promise<void> {
   console.warn(
     "[Sentinel] All retry attempts exhausted. Exception event not delivered to the gateway."
   );
+  return null;
 }

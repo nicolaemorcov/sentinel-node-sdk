@@ -31,7 +31,7 @@ let _config: Readonly<SentinelConfig> | null = null;
 export function configure(
   options: Partial<SentinelConfig> & Pick<SentinelConfig, "apiKey" | "githubRepo">
 ): void {
-  _config = Object.freeze({
+  const built: SentinelConfig = {
     apiKey:           options.apiKey,
     githubRepo:       options.githubRepo,
     gatewayUrl:       options.gatewayUrl       ?? "https://nexuspartner.dev",
@@ -40,11 +40,13 @@ export function configure(
     retryBackoffBase: options.retryBackoffBase  ?? 500,
     endpointLabel:    options.endpointLabel     ?? "<unknown>",
     enabled:          resolveEnabled(options.enabled),
-  });
+    ...(options.onAccepted !== undefined && { onAccepted: options.onAccepted }),
+  };
+  _config = Object.freeze(built);
 
   console.info(
     `[Sentinel] SDK initialised. ` +
-    `repo=${_config.githubRepo} gateway=${_config.gatewayUrl} enabled=${_config.enabled}`
+    `repo=${built.githubRepo} gateway=${built.gatewayUrl} enabled=${built.enabled}`
   );
 }
 

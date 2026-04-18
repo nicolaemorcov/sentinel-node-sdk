@@ -27,4 +27,5 @@
 export { configure, getConfig }                     from "./config";
 export { installHook }                              from "./hooks";
 export { sentinelMiddleware, withSentinel }         from "./middleware";
+export { dispatch }                                 from "./dispatcher";
 export type { SentinelConfig, ExceptionRequest }   from "./types";
