@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Sentinel AI exception monitoring SDK for Node.js / TypeScript applications",
   "keywords": ["sentinel", "monitoring", "exception", "ai", "typescript", "nodejs"],
-  "license": "UNLICENSED",
+  "license": "MIT",
   "engines": {
     "node": ">=18.3.0"
   },
