@@ -78,8 +78,25 @@ export async function dispatch(payload: ExceptionRequest): Promise<string | null
         }
       }
 
-      if (response.status >= 400 && response.status < 500) {
-        // 4xx — terminal; do not retry.
+      if (response.status === 429) {
+        // Rate-limited — honour the gateway's Retry-After header when present.
+        // The HTTP spec allows both integer seconds and HTTP-date format; we only
+        // handle the integer form (which is what the gateway emits).  An HTTP-date
+        // string will parse as NaN and fall back to standard backoff, which is safe.
+        const rawRetryAfter = response.headers.get("retry-after") ?? "0";
+        const parsed = parseInt(rawRetryAfter, 10);
+        const retryAfterSec = Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+        console.warn(
+          `[Sentinel] Gateway rate-limited (HTTP 429). ` +
+            `Attempt ${attempt + 1} of ${config.maxRetries + 1}.` +
+            (retryAfterSec > 0 ? ` Retry-After: ${retryAfterSec}s.` : "")
+        );
+        if (attempt < config.maxRetries && retryAfterSec > 0) {
+          await sleep(retryAfterSec * 1000);
+          continue;
+        }
+      } else if (response.status >= 400 && response.status < 500) {
+        // Other 4xx — terminal; do not retry.
         console.warn(
           `[Sentinel] Gateway rejected payload (HTTP ${response.status}). ` +
             "Check your apiKey, githubRepo, and account quota. No retry will be attempted."
@@ -87,11 +104,13 @@ export async function dispatch(payload: ExceptionRequest): Promise<string | null
         return null;
       }
 
-      // 5xx — retryable server error.
-      console.warn(
-        `[Sentinel] Gateway returned HTTP ${response.status}. ` +
-          `Attempt ${attempt + 1} of ${config.maxRetries + 1}.`
-      );
+      // 5xx or 429-without-header — retryable; fall through to backoff.
+      if (response.status !== 429) {
+        console.warn(
+          `[Sentinel] Gateway returned HTTP ${response.status}. ` +
+            `Attempt ${attempt + 1} of ${config.maxRetries + 1}.`
+        );
+      }
     } catch (err) {
       clearTimeout(timeoutId);
 
