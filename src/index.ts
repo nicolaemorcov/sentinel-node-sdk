@@ -1,12 +1,12 @@
 /**
- * sentinel-node-sdk — Public API surface.
+ * strictloop-node-sdk — Public API surface.
  *
  * This file re-exports only. No logic lives here.
  * Internal modules (scrubber, dispatcher) are intentionally not exported.
  *
  * Quick-start:
  *
- *   import { configure, installHook, sentinelMiddleware, withSentinel } from "sentinel-node-sdk";
+ *   import { configure, installHook, sentinelMiddleware, withSentinel } from "strictloop-node-sdk";
  *
  *   // 1. Configure once at startup (required before any other call)
  *   configure({

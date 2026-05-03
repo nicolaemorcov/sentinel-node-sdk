@@ -10,6 +10,10 @@
  * Scrubbing is applied only to errorMessage and stackTrace. Structural fields
  * (exceptionType, endpoint, githubRepo, timestamp, language) are passed through
  * unmodified — they cannot contain free-text PII by design.
+ *
+ * normalizeStackTrace() handles path normalization: strips the absolute
+ * process.cwd() prefix and converts backslashes to forward slashes so that
+ * file paths in stack frames match GitHub's Git tree paths exactly.
  */
 
 // ── Category 1: Email addresses ──────────────────────────────────────────────
@@ -101,4 +105,35 @@ export function scrub(input: string): string {
 
     // 5. Generic key=value secrets — preserves the key name and separator
     .replace(RE_SECRET, (_, key: string, sep: string) => `${key}${sep}[REDACTED_SECRET]`);
+}
+
+// ── Stack trace path normalization ────────────────────────────────────────────
+// Computed once at module load; process.cwd() is stable for the process lifetime.
+// Trailing slash is added so only the root prefix is stripped, not partial names.
+const _cwdPrefix = (() => {
+  const cwd = process.cwd().replace(/\\/g, "/");
+  return cwd.endsWith("/") ? cwd : `${cwd}/`;
+})();
+
+// Escape regex metacharacters in the prefix (drive letters, colons, dots, etc.).
+const _cwdPrefixRe = new RegExp(
+  _cwdPrefix.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
+  "gi" // case-insensitive: Windows drive letters vary in case across environments
+);
+
+/**
+ * Strips the process working-directory prefix from all file paths in a stack
+ * trace and converts backslashes to forward slashes, making paths repo-relative
+ * and compatible with GitHub's Git tree API.
+ *
+ * Example (Windows):
+ *   Input:  "at Object.<anonymous> (L:\Projects\app\src\index.ts:10:5)"
+ *   Output: "at Object.<anonymous> (src/index.ts:10:5)"
+ *
+ * Applied to stackTrace AFTER scrub() so PII redaction runs first.
+ */
+export function normalizeStackTrace(input: string): string {
+  return input
+    .replace(/\\/g, "/")        // backslashes → forward slashes (Windows paths)
+    .replace(_cwdPrefixRe, ""); // strip absolute process root prefix
 }

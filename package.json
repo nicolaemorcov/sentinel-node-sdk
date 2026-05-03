@@ -1,8 +1,8 @@
 {
-  "name": "sentinel-node-sdk",
-  "version": "1.0.0",
-  "description": "Sentinel AI exception monitoring SDK for Node.js / TypeScript applications",
-  "keywords": ["sentinel", "monitoring", "exception", "ai", "typescript", "nodejs"],
+  "name": "strictloop-node-sdk",
+  "version": "1.0.1",
+  "description": "StrictLoop AI exception monitoring SDK for Node.js / TypeScript applications",
+  "keywords": ["strictloop", "monitoring", "exception", "ai", "typescript", "nodejs"],
   "license": "MIT",
   "engines": {
     "node": ">=18.3.0"

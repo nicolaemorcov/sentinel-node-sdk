@@ -1,8 +1,8 @@
-# CLAUDE.md — sentinel-node-sdk
+# CLAUDE.md — strictloop-node-sdk
 
 ## What this project is
 
-A zero-dependency Node.js/TypeScript SDK that captures runtime exceptions, scrubs PII from the message and stack trace, and dispatches the payload to the Sentinel AI gateway (`POST /api/v1/exceptions`). It supports three integration modes: Express error middleware, Next.js App Router HOF wrapper, and a global process-level hook.
+A zero-dependency Node.js/TypeScript SDK that captures runtime exceptions, scrubs PII from the message and stack trace, and dispatches the payload to the StrictLoop AI gateway (`POST /api/v1/exceptions`). It supports three integration modes: Express error middleware, Next.js App Router HOF wrapper, and a global process-level hook.
 
 ## Build commands
 

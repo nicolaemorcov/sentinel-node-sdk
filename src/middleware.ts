@@ -1,6 +1,6 @@
 import type { ExceptionRequest } from "./types";
 import { getConfig } from "./config";
-import { scrub } from "./scrubber";
+import { scrub, normalizeStackTrace } from "./scrubber";
 import { dispatch } from "./dispatcher";
 
 /**
@@ -15,7 +15,7 @@ function buildPayload(reason: unknown, endpoint: string): ExceptionRequest {
     return {
       exceptionType: reason.constructor.name || "Error",
       errorMessage:  scrub(reason.message),
-      stackTrace:    scrub(reason.stack ?? reason.message),
+      stackTrace:    normalizeStackTrace(scrub(reason.stack ?? reason.message)),
       endpoint,
       timestamp,
       githubRepo,
@@ -95,7 +95,7 @@ interface NextRequestLike {
  *
  * Usage:
  *   // app/api/orders/[id]/route.ts
- *   import { withSentinel } from "sentinel-node-sdk";
+ *   import { withSentinel } from "strictloop-node-sdk";
  *
  *   export const GET = withSentinel(async (req) => {
  *     const order = await fetchOrder(req);

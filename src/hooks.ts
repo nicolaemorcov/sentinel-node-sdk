@@ -1,6 +1,6 @@
 import type { ExceptionRequest } from "./types";
 import { getConfig } from "./config";
-import { scrub } from "./scrubber";
+import { scrub, normalizeStackTrace } from "./scrubber";
 import { dispatch } from "./dispatcher";
 
 // Idempotency guard — prevents duplicate listener registration.
@@ -20,7 +20,7 @@ function buildPayload(reason: unknown, endpointLabel: string): ExceptionRequest 
       exceptionType: reason.constructor.name || "Error",
       errorMessage:  scrub(reason.message),
       // error.stack includes the message line; send the full depth for RAG context scoring.
-      stackTrace:    scrub(reason.stack ?? reason.message),
+      stackTrace:    normalizeStackTrace(scrub(reason.stack ?? reason.message)),
       endpoint:      endpointLabel,
       timestamp,
       githubRepo,
