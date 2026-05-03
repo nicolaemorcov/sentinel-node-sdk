@@ -1,6 +1,6 @@
-# sentinel-node-sdk
+# strictloop-node-sdk
 
-A Node.js/TypeScript SDK for capturing, PII-scrubbing, and reporting runtime exceptions to the Sentinel AI gateway for automated analysis.
+A Node.js/TypeScript SDK for capturing, PII-scrubbing, and reporting runtime exceptions to the StrictLoop AI gateway for automated analysis.
 
 ## Requirements
 
@@ -10,7 +10,7 @@ A Node.js/TypeScript SDK for capturing, PII-scrubbing, and reporting runtime exc
 ## Installation
 
 ```bash
-npm install sentinel-node-sdk
+npm install strictloop-node-sdk
 ```
 
 Framework integrations are optional — install only what you use:
@@ -28,7 +28,7 @@ npm install next
 Call `configure()` once at application startup, before any other SDK function:
 
 ```typescript
-import { configure, installHook, sentinelMiddleware, withSentinel } from "sentinel-node-sdk";
+import { configure, installHook, sentinelMiddleware, withSentinel } from "strictloop-node-sdk";
 
 configure({
   apiKey:     process.env.SENTINEL_API_KEY!,
@@ -79,7 +79,7 @@ Wrap individual route handlers with `withSentinel`:
 
 ```typescript
 // app/api/orders/[id]/route.ts
-import { withSentinel } from "sentinel-node-sdk";
+import { withSentinel } from "strictloop-node-sdk";
 
 export const GET = withSentinel(async (req) => {
   const order = await fetchOrder(req);
